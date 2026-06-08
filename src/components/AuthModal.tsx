@@ -74,9 +74,13 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
 
       onLoginSuccess(data.token, data.user);
     } catch (err: any) {
-      console.error("Firebase Google Popup authentication failed:", err);
-      setAuthError(err.message || "Google single sign-in was cancelled or failed. Try standard credentials.");
-    } finally {
+  console.error("Firebase Google Popup authentication failed:", err);
+  if (err?.code === "auth/popup-blocked" || err?.message?.includes("popup") || err?.message?.includes("blocked")) {
+    setAuthError("Google Identity popup was blocked because this app is currently viewed inside the sandboxed development iframe.\n\n🔒 HOW TO LOG IN SUCCESSFULLY:\n• SOLUTION 1: Click the 'Trouble with Popups? Use Sandbox Google Login' button below to log in instantly inside this window.\n• SOLUTION 2: Or open the application in a new browser tab (or directly use your deployed live link https://webwraptechnology.vercel.app/) where standard Google authentications work perfectly!");
+  } else {
+    setAuthError(err.message || "Google single sign-in was cancelled or failed. Try standard credentials.");
+  }
+}finally {
       setAuthLoading(false);
     }
   };

@@ -1,0 +1,78 @@
+{
+  "users": [
+    {
+      "id": "admin-rohit",
+      "name": "Rohit Kumar (Admin)",
+      "email": "rohit21oc@gmail.com",
+      "password": "fcd55e502a11730917b3b1371afdd15b812c99a8e2b3430ba9a1f0168063fbbd",
+      "role": "ADMIN",
+      "provider": "LOCAL",
+      "createdAt": "2026-06-08T21:12:58.621Z"
+    },
+    {
+      "id": "admin-1",
+      "name": "Global Administrator",
+      "email": "admin@agency.com",
+      "password": "09cc38f5fe4d791798837bc226500134670f0203fcc5654d6f3d972b6624463c",
+      "role": "ADMIN",
+      "provider": "LOCAL",
+      "createdAt": "2026-06-08T21:12:58.622Z"
+    },
+    {
+      "id": "demo-user",
+      "name": "Jane Doe",
+      "email": "client@company.com",
+      "password": "905cd2993f45713560bf645d4d2e5840b83ce7f3c4950ead4c17ad00b9cdeb06",
+      "role": "USER",
+      "provider": "LOCAL",
+      "createdAt": "2026-06-08T21:12:58.622Z"
+    },
+    {
+      "id": "user-b34b0fee-85a8-42f5-9084-8a24b5798bd2",
+      "name": "Rohit Kumar",
+      "email": "rohit27dc@gmail.com",
+      "password": "1d5fdfe3a4b72d46e2e43746b4f1ef5033d8070d0988a3903ab6465441536ba9",
+      "role": "USER",
+      "provider": "GOOGLE",
+      "createdAt": "2026-06-08T21:14:58.727Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "userId": "demo-user",
+      "clientName": "Jane Doe",
+      "clientEmail": "client@company.com",
+      "companyName": "Cosmic Enterprises",
+      "phone": "+1 (555) 321-7890",
+      "projectType": "Website",
+      "budget": "$15,000",
+      "deadline": "3 Months",
+      "description": "We need a futuristic, high-converting React application with an immersive user experience, glassmorphic headers, beautiful motion sliders, and seamless customer intake pathways.",
+      "status": "In Progress",
+      "createdAt": "2026-06-03T21:12:58.622Z",
+      "aiAnalysis": "### Architecture & Technology Approach\n- **Frontend**: React 19 + Tailwind CSS + Framer Motion\n- **Backend**: Node.js + Express\n- **Host**: Cloud Run with Nginx optimization\n\n### Strategic Roadmaps\n- **Month 1**: Design mockups, vector artwork integration, layout wireframes.\n- **Month 2**: Component integration, interactive form states.\n- **Month 3**: Sandbox QA, cross-device testing, SEO indexing, and direct production release.",
+      "adminNotes": "Admin: Welcome to our agency! Your design phase is complete and developers have begun initial coding."
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-1",
+      "name": "Alice Vance",
+      "email": "alice@vancetech.com",
+      "subject": "Custom ERP Query",
+      "message": "Hello, looking to build an internal ERP system for our logistics company. Wondering if you have experience with shipping API integrations?",
+      "createdAt": "2026-06-08T21:12:58.622Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-1",
+      "userId": "demo-user",
+      "title": "Project Request Received",
+      "message": "Your project 'Cosmic Enterprises HQ' request has been securely recorded. Our architects are looking over specifications.",
+      "readStatus": false,
+      "createdAt": "2026-06-08T21:12:58.622Z"
+    }
+  ]
+}
