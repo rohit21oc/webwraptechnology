@@ -17,6 +17,21 @@ interface AuthModalProps {
   onLoginSuccess: (token: string, user: any) => void;
 }
 
+// Helper to make API requests and handle server crashes or non-JSON errors gracefully
+async function robustFetchJSON(url: string, options: RequestInit) {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(`Server returned status ${res.status} (non-JSON): ${text.slice(0, 180) || "(empty response)"}`);
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed with server status ${res.status}`);
+  }
+  return data;
+}
+
 export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   
@@ -33,8 +48,8 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
 
   // Google Sign-In Sandbox/Manual States (handy if popups are blocked by browser/iframe rules)
   const [showGoogleSandbox, setShowGoogleSandbox] = useState(false);
-  const [googleSandboxEmail, setGoogleSandboxEmail] = useState("");
-  const [googleSandboxName, setGoogleSandboxName] = useState("");
+  const [googleSandboxEmail, setGoogleSandboxEmail] = useState("rohit27dc@gmail.com");
+  const [googleSandboxName, setGoogleSandboxName] = useState("Rohit Kumar");
 
   // Forgot Password States
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -59,28 +74,23 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
         return;
       }
 
-      const res = await fetch("/api/auth/google", {
+      const data = await robustFetchJSON("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), name: name.trim() }),
       });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setAuthError(data.error || "Firebase authentications verification rejected by local server.");
-        setAuthLoading(false);
-        return;
-      }
 
       onLoginSuccess(data.token, data.user);
     } catch (err: any) {
-  console.error("Firebase Google Popup authentication failed:", err);
-  if (err?.code === "auth/popup-blocked" || err?.message?.includes("popup") || err?.message?.includes("blocked")) {
-    setAuthError("Google Identity popup was blocked because this app is currently viewed inside the sandboxed development iframe.\n\n🔒 HOW TO LOG IN SUCCESSFULLY:\n• SOLUTION 1: Click the 'Trouble with Popups? Use Sandbox Google Login' button below to log in instantly inside this window.\n• SOLUTION 2: Or open the application in a new browser tab (or directly use your deployed live link https://webwraptechnology.vercel.app/) where standard Google authentications work perfectly!");
-  } else {
-    setAuthError(err.message || "Google single sign-in was cancelled or failed. Try standard credentials.");
-  }
-}finally {
+      console.error("Firebase Google Popup authentication failed:", err);
+      if (err?.code === "auth/popup-blocked" || err?.message?.includes("popup") || err?.message?.includes("blocked")) {
+        setAuthError("Google Identity popup was blocked because this app is currently viewed inside the sandboxed development iframe.\n\n🔒 HOW TO LOG IN SUCCESSFULLY:\n• SOLUTION 1: Click the 'Trouble with Popups? Use Sandbox Google Login' button below to log in instantly inside this window.\n• SOLUTION 2: Or open the application in a new browser tab where standard Google credentials work perfectly!");
+      } else if (err?.code === "auth/unauthorized-domain" || err?.message?.includes("unauthorized-domain") || err?.message?.includes("authorized domain")) {
+        setAuthError("This domain (webwraptechnology.vercel.app) is not whitelisted in your Firebase Project!\n\n🛠️ EASY FIX:\n1. Open Firebase Console -> Authentication -> Settings -> Authorized Domains.\n2. Click 'Add Domain' and add 'webwraptechnology.vercel.app'.\n3. It will start working instantly!");
+      } else {
+        setAuthError(err.message || "Google single sign-in was cancelled or failed. Try standard credentials.");
+      }
+    } finally {
       setAuthLoading(false);
     }
   };
@@ -98,22 +108,15 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
 
     setAuthLoading(true);
     try {
-      const r = await fetch("/api/auth/google", {
+      const data = await robustFetchJSON("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: targetEmail, name: targetName }),
       });
-      const data = await r.json();
-
-      if (!r.ok) {
-        setAuthError(data.error || "OAuth secure verification rejected");
-        setAuthLoading(false);
-        return;
-      }
 
       onLoginSuccess(data.token, data.user);
-    } catch (e) {
-      setAuthError("Connection error communicating with auth servers.");
+    } catch (e: any) {
+      setAuthError(e.message || "Connection error communicating with auth servers.");
     } finally {
       setAuthLoading(false);
     }
@@ -129,7 +132,7 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
 
     // 1. Try standard server-side local login FIRST (enables admins like Rohit & pre-configured demos)
     try {
-      const localRes = await fetch("/api/auth/login", {
+      const localData = await robustFetchJSON("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -137,8 +140,7 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
           password: loginPassword,
         }),
       });
-      const localData = await localRes.json();
-      if (localRes.ok && localData.token && localData.user) {
+      if (localData && localData.token && localData.user) {
         onLoginSuccess(localData.token, localData.user);
         return;
       }
@@ -155,7 +157,7 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
       );
       const firebaseUser = userCredential.user;
 
-      const response = await fetch("/api/auth/google", {
+      const data = await robustFetchJSON("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,13 +165,6 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
           name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Client Member",
         }),
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAuthError(data.error || "Authentication synchronization with backend failed.");
-        setAuthLoading(false);
-        return;
-      }
 
       onLoginSuccess(data.token, data.user);
     } catch (err: any) {
@@ -225,7 +220,7 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
         console.warn("Unable to write info to Firestore (standard if rules are undeployed)", firestoreErr);
       }
 
-      const response = await fetch("/api/auth/google", {
+      const data = await robustFetchJSON("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -233,13 +228,6 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
           name: registerName.trim(),
         }),
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAuthError(data.error || "Registration validation synchronization with server failed.");
-        setAuthLoading(false);
-        return;
-      }
 
       onLoginSuccess(data.token, data.user);
     } catch (err: any) {
