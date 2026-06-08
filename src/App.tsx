@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Sparkles, X } from "lucide-react";
 import Header from "./components/Header";
 import HomeView from "./components/HomeView";
 import UserDashboard from "./components/UserDashboard";
@@ -7,7 +8,7 @@ import AuthModal from "./components/AuthModal";
 import SupportChat from "./components/SupportChat";
 import WhatsAppButton from "./components/WhatsAppButton";
 import { UserRole } from "./types";
-import { auth, signOut } from "./lib/firebase";
+import { auth, signOut, getRedirectResult } from "./lib/firebase";
 
 export default function App() {
   // Navigation Routing States
@@ -19,6 +20,8 @@ export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [redirectLoading, setRedirectLoading] = useState<boolean>(false);
+  const [redirectError, setRedirectError] = useState<string>("");
 
   // Support Floating AI Advisor States (controlled here or via Chat components)
   const [chatOpen, setChatOpen] = useState(false);
@@ -36,6 +39,43 @@ export default function App() {
       setToken(savedToken);
       fetchUserSession(savedToken);
     }
+  }, []);
+
+  // Firebase: Google Redirect Authentication Handler
+  useEffect(() => {
+    const handleCheckRedirect = async () => {
+      try {
+        setRedirectLoading(true);
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          const firebaseUser = result.user;
+          const email = firebaseUser.email;
+          const name = firebaseUser.displayName || email?.split("@")[0] || "Authorized User";
+          if (email) {
+            const res = await fetch("/api/auth/google", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: email.trim(), name: name.trim() }),
+            });
+            const contentType = res.headers.get("content-type") || "";
+            if (contentType.includes("application/json") && res.ok) {
+              const data = await res.json();
+              handleLoginSuccess(data.token, data.user);
+            } else {
+              const text = await res.text();
+              console.error("Exchange failed after redirect:", text);
+              setRedirectError("Google account synchronization failed with local server.");
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error("Firebase auth redirect check error:", err);
+        setRedirectError(err.message || "Credential verification failed during redirect handshake.");
+      } finally {
+        setRedirectLoading(false);
+      }
+    };
+    handleCheckRedirect();
   }, []);
 
   // Sync data updates on login state triggers
@@ -242,6 +282,41 @@ export default function App() {
           onClose={() => setShowAuthModal(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+      )}
+
+      {/* Google Redirect Authentication Overlay Loader */}
+      {redirectLoading && (
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[999] flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative mb-6">
+            <div className="w-16 h-16 rounded-full border-t-2 border-r-2 border-cyan-400 animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border-b-2 border-l-2 border-violet-500 animate-spin [animation-duration:1.5s]"></div>
+            <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-cyan-400 animate-pulse" />
+          </div>
+          <h3 className="text-base font-semibold text-white tracking-wider mb-2 font-mono uppercase">Synchronizing OAuth Session</h3>
+          <p className="text-xs text-slate-400 max-w-sm">Please wait while we verify your Google Authentication status and update secure tokens on the server...</p>
+        </div>
+      )}
+
+      {redirectError && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[999] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+          <div className="bg-slate-900 border border-red-500/30 p-6 rounded-2xl max-w-md w-full shadow-2xl relative">
+            <button 
+              onClick={() => setRedirectError("")}
+              className="absolute top-3 right-3 text-slate-500 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto mb-4 font-mono font-bold text-lg">!</div>
+            <h3 className="text-sm font-bold text-white mb-2">Google Single Sign-In Handshake Failed</h3>
+            <p className="text-xs text-slate-400 leading-relaxed mb-4">{redirectError}</p>
+            <button
+              onClick={() => setRedirectError("")}
+              className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-all"
+            >
+              Dismiss Notice
+            </button>
+          </div>
+        </div>
       )}
 
     </div>
