@@ -1,0 +1,6 @@
+{
+  "name": "SaaS Agency Portal",
+  "description": "Premium customer request portal, interactive AI analytics, JWT authentication, and administrative management dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

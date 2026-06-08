@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Secure data helper checking proper field schema types and boundary limits
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'provider', 'createdAt', 'status'])
+        && data.keys().size() == 7
+        && data.uid is string
+        && data.uid == request.auth.uid
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 200
+        && data.email is string
+        && data.email.size() > 0
+        && data.email.size() <= 200
+        && data.role is string
+        && (data.role == 'USER' || data.role == 'ADMIN')
+        && data.provider is string
+        && data.createdAt is string
+        && data.status is string;
+    }
+
+    // Default global deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Secure matches for users profiles path
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidId(userId)
+        && isValidUser(request.resource.data);
+        
+      allow update: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidId(userId)
+        && isValidUser(request.resource.data)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          // Allow altering name, provider, or status
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'provider', 'status'])
+        );
+
+      allow delete: if false; // User document removal forbidden via client SDKs to maintain consistent client records
+    }
+  }
+}

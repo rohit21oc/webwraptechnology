@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile store securely mirroring authentication attributes.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique Firebase Authentication system UID of the registered user."
+        },
+        "name": {
+          "type": "string",
+          "description": "Corporate client or display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Registered workspace email address."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["USER", "ADMIN"],
+          "description": "Designation role for dashboard navigation boundaries."
+        },
+        "provider": {
+          "type": "string",
+          "description": "Identity provider keyword token."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation ISO date timestamp."
+        },
+        "status": {
+          "type": "string",
+          "description": "Active status verification indicator."
+        }
+      },
+      "required": ["uid", "name", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection storing verified identity parameters for registered enterprise users."
+    }
+  }
+}
