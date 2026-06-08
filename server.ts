@@ -60,6 +60,19 @@ const DB_FILE = process.env.VERCEL
   ? path.join("/tmp", "agency_database.json")
   : path.join(process.cwd(), "agency_database.json");
 
+// If on Vercel environment and the /tmp DB file doesn't exist, seed it from root folder database to retain preset accounts
+if (process.env.VERCEL && !fs.existsSync(DB_FILE)) {
+  try {
+    const rootDbPath = path.join(process.cwd(), "agency_database.json");
+    if (fs.existsSync(rootDbPath)) {
+      fs.copyFileSync(rootDbPath, DB_FILE);
+      console.log("Successfully seeded /tmp database from repository agency_database.json");
+    }
+  } catch (err) {
+    console.error("Could not seed Vercel /tmp database directory:", err);
+  }
+}
+
 interface DBState {
   users: any[];
   projects: any[];
