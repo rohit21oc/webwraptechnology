@@ -801,7 +801,8 @@ Be brief yet insightful. Avoid sounding robotic, but offer robust technological 
 // BOOTSTRAP VITE SERVING LIFECYCLE
 // ---------------------------------------------------
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa"
