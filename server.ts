@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import nodemailer from "nodemailer";
 
@@ -13,6 +12,15 @@ const PORT = 3000;
 // Enable large bodies for file attachments
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+
+// Request/Response logging middleware for diagnostics
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.url}`);
+  res.on("finish", () => {
+    console.log(`[RESPONSE] ${req.method} ${req.url} - Status: ${res.statusCode}`);
+  });
+  next();
+});
 
 // ---------------------------------------------------
 // SECURITY & SIGNATURE-BASED JWT SYSTEM
@@ -41,7 +49,7 @@ function verifyToken(token: string): any {
       .update(`${header}.${encodedPayload}`)
       .digest("base64url");
     if (signature !== computedSignature) return null;
-    const decodedPayload = JSON.parse(Buffer.from(encodedPayload, "base-64url" as any).toString());
+    const decodedPayload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString());
     if (Date.now() > decodedPayload.exp) return null; // Expired
     return decodedPayload;
   } catch (error) {
@@ -57,7 +65,22 @@ function hashPassword(password: string): string {
 // ---------------------------------------------------
 // DATABASE STATE ENGINE (FILE-PERSISTED)
 // ---------------------------------------------------
-const DB_FILE = path.join(process.cwd(), "agency_database.json");
+const DB_FILE = process.env.VERCEL
+  ? path.join("/tmp", "agency_database.json")
+  : path.join(process.cwd(), "agency_database.json");
+
+// If on Vercel environment and the /tmp DB file doesn't exist, seed it from root folder database to retain preset accounts
+if (process.env.VERCEL && !fs.existsSync(DB_FILE)) {
+  try {
+    const rootDbPath = path.join(process.cwd(), "agency_database.json");
+    if (fs.existsSync(rootDbPath)) {
+      fs.copyFileSync(rootDbPath, DB_FILE);
+      console.log("Successfully seeded /tmp database from repository agency_database.json");
+    }
+  } catch (err) {
+    console.error("Could not seed Vercel /tmp database directory:", err);
+  }
+}
 
 interface DBState {
   users: any[];
@@ -800,13 +823,32 @@ Be brief yet insightful. Avoid sounding robotic, but offer robust technological 
 // ---------------------------------------------------
 // BOOTSTRAP VITE SERVING LIFECYCLE
 // ---------------------------------------------------
+const isVercelServerless = !!(process.env.VERCEL && process.env.NODE_ENV === "production");
+
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  if (!isVercelServerless && (process.env.NODE_ENV !== "production" || !fs.existsSync(path.join(process.cwd(), "dist/index.html")))) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa"
     });
     app.use(vite.middlewares);
+
+    // Standard Vite SPA Fallback Route for non-API requests in development
+    app.get("*", async (req, res, next) => {
+      if (req.url.startsWith("/api")) {
+        return next();
+      }
+      try {
+        const url = req.originalUrl || req.url;
+        let html = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf-8");
+        html = await vite.transformIndexHtml(url, html);
+        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
@@ -815,9 +857,15 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Enterprise Full Stack Agent Port listening securely on connection http://localhost:${PORT}`);
-  });
+  if (!isVercelServerless) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Enterprise Full Stack Agent Port listening securely on connection http://localhost:${PORT}`);
+    });
+  }
 }
 
-startServer();
+if (!isVercelServerless) {
+  startServer();
+}
+
+export default app;
