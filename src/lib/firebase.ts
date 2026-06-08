@@ -3,8 +3,6 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
-  signInWithRedirect,
-  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail,
@@ -38,8 +36,6 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 // Helper wrappers
 export { 
   signInWithPopup, 
-  signInWithRedirect,
-  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail, 

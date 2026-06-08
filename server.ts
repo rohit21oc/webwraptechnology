@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import nodemailer from "nodemailer";
 
@@ -40,7 +41,7 @@ function verifyToken(token: string): any {
       .update(`${header}.${encodedPayload}`)
       .digest("base64url");
     if (signature !== computedSignature) return null;
-    const decodedPayload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString());
+    const decodedPayload = JSON.parse(Buffer.from(encodedPayload, "base-64url" as any).toString());
     if (Date.now() > decodedPayload.exp) return null; // Expired
     return decodedPayload;
   } catch (error) {
@@ -56,22 +57,7 @@ function hashPassword(password: string): string {
 // ---------------------------------------------------
 // DATABASE STATE ENGINE (FILE-PERSISTED)
 // ---------------------------------------------------
-const DB_FILE = process.env.VERCEL
-  ? path.join("/tmp", "agency_database.json")
-  : path.join(process.cwd(), "agency_database.json");
-
-// If on Vercel environment and the /tmp DB file doesn't exist, seed it from root folder database to retain preset accounts
-if (process.env.VERCEL && !fs.existsSync(DB_FILE)) {
-  try {
-    const rootDbPath = path.join(process.cwd(), "agency_database.json");
-    if (fs.existsSync(rootDbPath)) {
-      fs.copyFileSync(rootDbPath, DB_FILE);
-      console.log("Successfully seeded /tmp database from repository agency_database.json");
-    }
-  } catch (err) {
-    console.error("Could not seed Vercel /tmp database directory:", err);
-  }
-}
+const DB_FILE = path.join(process.cwd(), "agency_database.json");
 
 interface DBState {
   users: any[];
@@ -815,8 +801,7 @@ Be brief yet insightful. Avoid sounding robotic, but offer robust technological 
 // BOOTSTRAP VITE SERVING LIFECYCLE
 // ---------------------------------------------------
 async function startServer() {
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-    const { createServer: createViteServer } = await import("vite");
+  if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa"
@@ -830,15 +815,9 @@ async function startServer() {
     });
   }
 
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Enterprise Full Stack Agent Port listening securely on connection http://localhost:${PORT}`);
-    });
-  }
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Enterprise Full Stack Agent Port listening securely on connection http://localhost:${PORT}`);
+  });
 }
 
-if (!process.env.VERCEL) {
-  startServer();
-}
-
-export default app;
+startServer();

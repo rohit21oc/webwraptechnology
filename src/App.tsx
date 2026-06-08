@@ -45,9 +45,9 @@ export default function App() {
   useEffect(() => {
     const handleCheckRedirect = async () => {
       try {
+        setRedirectLoading(true);
         const result = await getRedirectResult(auth);
         if (result && result.user) {
-          setRedirectLoading(true);
           const firebaseUser = result.user;
           const email = firebaseUser.email;
           const name = firebaseUser.displayName || email?.split("@")[0] || "Authorized User";
