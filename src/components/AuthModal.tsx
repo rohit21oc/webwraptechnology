@@ -318,20 +318,42 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
           </div>
 
           {authError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl font-mono text-center space-y-2.5">
-              <div className="flex items-center justify-center gap-1.5 font-bold text-rose-300">
-                <span>⚠️ authentication warning</span>
+            <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs rounded-xl font-sans text-left space-y-3 shadow-md">
+              <div className="flex items-center gap-2 font-bold text-rose-400">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span className="uppercase tracking-wider font-mono text-[10px]">Security & Integration Notice</span>
               </div>
               <p className="text-[11px] leading-relaxed text-slate-300">
                 {authError}
               </p>
+              
+              {/* Detailed Help Guide for Vercel/Production Alignments */}
+              <div className="bg-slate-900/85 p-2.5 rounded-lg border border-white/5 text-[10.5px] leading-relaxed text-slate-400 space-y-1.5 font-sans">
+                <p className="text-cyan-400 font-semibold font-mono text-[10px] uppercase">🛠️ HOW TO LOG IN SECURELY ON VERCEL:</p>
+                <div className="space-y-1 pl-1.5 border-l border-cyan-500/30">
+                  <p>
+                    <strong className="text-slate-300">Option 1: Use Sandbox Google Sign-In (Recommended)</strong><br />
+                    Click the <strong className="text-cyan-400 font-mono">Trouble with Popups?</strong> button below. It simulates the Google profile handshake securely without browser blocks!
+                  </p>
+                  <p className="pt-1">
+                    <strong className="text-slate-300">Option 2: Register/Login with Email</strong><br />
+                    Click <strong className="text-cyan-400">Create Account</strong> below, enter any email and password, and log in. It completely bypasses browser popup restrictions.
+                  </p>
+                  {typeof window !== "undefined" && !window.location.hostname.includes("localhost") && (
+                    <p className="pt-1 text-[10px] text-slate-500">
+                      Note: Since this is an automated sandbox environment, custom domains like <span className="text-cyan-500/80 font-mono text-[9px]">{window.location.hostname}</span> cannot be whitelisted in the sandboxed Firebase Project console.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               {typeof window !== "undefined" && window.self !== window.top && (
-                <div className="pt-1.5 flex flex-col gap-1.5 matches-iframe">
+                <div className="pt-1 flex flex-col gap-1.5">
                   <a
                     href={window.location.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-sans text-xs font-semibold tracking-wide transition-all uppercase shadow-md active:scale-95 cursor-pointer decoration-0"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-sans text-xs font-semibold tracking-wide transition-all uppercase shadow-md active:scale-95 cursor-pointer decoration-0"
                   >
                     Open App in New Tab ↗
                   </a>
