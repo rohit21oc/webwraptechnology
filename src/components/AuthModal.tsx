@@ -318,8 +318,35 @@ export default function AuthModal({ onClose, onLoginSuccess }: AuthModalProps) {
           </div>
 
           {authError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl font-mono text-center">
-              ⚠️ {authError}
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl font-mono text-center space-y-2.5">
+              <div className="flex items-center justify-center gap-1.5 font-bold text-rose-300">
+                <span>⚠️ authentication warning</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-slate-300">
+                {authError}
+              </p>
+              {typeof window !== "undefined" && window.self !== window.top && (
+                <div className="pt-1.5 flex flex-col gap-1.5 matches-iframe">
+                  <a
+                    href={window.location.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-sans text-xs font-semibold tracking-wide transition-all uppercase shadow-md active:scale-95 cursor-pointer decoration-0"
+                  >
+                    Open App in New Tab ↗
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowGoogleSandbox(true);
+                      setAuthError("");
+                    }}
+                    className="text-[10px] text-cyan-400 hover:underline font-mono mt-0.5"
+                  >
+                    Stay in Iframe & Use Sandbox Login
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
